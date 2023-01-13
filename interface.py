@@ -173,13 +173,8 @@ def copy_information(keys: list[str], el: list, todo):
     def fun(element):
         if element['listened'].get('button_click'):
             for i in range(min(len(keys), len(el))):
-                if isinstance(el[i], Input):
-
-                    todo.update({keys[i]: int(el[i].text)})
-                elif isinstance(el[i], CheckBox):
-                    todo.update({keys[i]: el[i].state})
-                elif isinstance(el[i], ChoiceBox):
-                    todo.update({keys[i]: list(el[i].choice_dict.values())[el[i].current]})
+                if isinstance(el[i], (Input, CheckBox, ChoiceBox)):
+                    todo.update({keys[i]: el[i].get_information()})
                 else:
                     todo.update({keys[i]: el[i]})
     return fun
@@ -192,8 +187,158 @@ def sum_function(*functions):
     return fun
 
 
+def fun_text(frame_dict):
+    if frame_dict.get('text'):
+        s = pygame.font.SysFont(frame_dict.get('name'), frame_dict.get('size'),
+                                frame_dict.get('bold'), frame_dict.get('italic')).render(
+            frame_dict.get('text'), frame_dict.get('antialias'), frame_dict.get('color'))
+        frame_dict['pos'].inner = V([i / 2 for i in s.get_size()])
+        frame_dict['pos'].update()
+        return s
+    else:
+        return fun_rect([10, 60, 160])(frame_dict)
+
+
+def fun_text_attention(element):
+    if element['listened'].get('mouse_attention'):
+        element['frame_array'][0]['size'] += 1
+    else:
+        element['frame_array'][0]['size'] = 24
+    element['frame_class'].update_frames()
+
+
+def fun_button(frame_dict):
+    s = pygame.font.SysFont(frame_dict.get('name'), frame_dict.get('size'),
+                            frame_dict.get('bold'), frame_dict.get('italic')).render(
+        frame_dict.get('text'), frame_dict.get('antialias'), frame_dict.get('color'))
+
+    pos = frame_dict['pos'].copy()
+    pos = Pos(pos.inner, pos.inner)
+    pos.update()
+
+    border = pygame.Surface(pos.size.lis())
+    border.fill(frame_dict['border_color'])
+
+    pos.inner -= V(frame_dict['border_r'], frame_dict['border_r'])
+    pos.update()
+
+    back = pygame.Surface(pos.size.lis())
+    back.fill(frame_dict['back_color'])
+
+    text_pos = Pos(pos.inner, V([i / 2 for i in s.get_size()]))
+
+    back.blit(s, text_pos.position.lis())
+    border.blit(back, pos.position.lis())
+    return border
+
+
+def listen_button(element):
+    if element['frame_class'].current_frame == 0:
+        if element['listened'].get('mouse_attention'):
+            if not element['listened'].get('mouse_click'):
+                element['frame_class'].current_frame = 1
+
+    elif element['frame_class'].current_frame == 1:
+        if not element['listened'].get('mouse_attention'):
+            element['frame_class'].current_frame = 0
+        if element['listened'].get('mouse_click'):
+            element['frame_class'].current_frame = 2
+
+    elif element['frame_class'].current_frame == 2:
+        if not element['listened'].get('mouse_click'):
+            element['listened'].update({'button_click': True})
+            element['frame_class'].current_frame = 0
+        if not element['listened'].get('mouse_attention'):
+            element['frame_class'].current_frame = 0
+
+
+def fun_off_box(frame_dict):
+    pos = frame_dict['pos'].copy()
+    pos = Pos(pos.inner, pos.inner)
+    pos.update()
+
+    border = pygame.Surface(pos.size.lis())
+    border.fill(frame_dict['border_color'])
+
+    pos.inner -= V(frame_dict['border_r'], frame_dict['border_r'])
+    pos.update()
+
+    back = pygame.Surface(pos.size.lis())
+    back.fill(frame_dict['back_color'])
+
+    border.blit(back, pos.position.lis())
+    return border
+
+
+def fun_on_box(frame_dict):
+    pos = frame_dict['pos'].copy()
+    pos = Pos(pos.inner, pos.inner)
+    pos.update()
+
+    border = pygame.Surface(pos.size.lis())
+    border.fill(frame_dict['border_color'])
+
+    pos.inner -= V(frame_dict['border_r'], frame_dict['border_r'])
+    pos.update()
+
+    pos_check = Pos(pos.inner, pos.inner)
+    pos_check.inner -= V(frame_dict['check_r'], frame_dict['check_r'])
+    pos_check.update()
+
+    back = pygame.Surface(pos.size.lis())
+    back.fill(frame_dict['back_color'])
+
+    check = pygame.Surface(pos_check.size.lis())
+    check.fill(frame_dict['check_color'])
+
+    back.blit(check, pos_check.position.lis())
+
+    border.blit(back, pos.position.lis())
+    return border
+
+
+def listen_box(element):
+    if not element.state:
+        if element['frame_class'].current_frame == 0:
+            if element['listened'].get('mouse_attention'):
+                if not element['listened'].get('mouse_click'):
+                    element['frame_class'].current_frame = 1
+
+        elif element['frame_class'].current_frame == 1:
+            if not element['listened'].get('mouse_attention'):
+                element['frame_class'].current_frame = 0
+            if element['listened'].get('mouse_click'):
+                element['frame_class'].current_frame = 2
+
+        elif element['frame_class'].current_frame == 2:
+            if not element['listened'].get('mouse_click'):
+                element.state = True
+                element['frame_class'].current_frame = 3
+            if not element['listened'].get('mouse_attention'):
+                element['frame_class'].current_frame = 0
+    else:
+        if element['frame_class'].current_frame == 3:
+            if element['listened'].get('mouse_attention'):
+                if not element['listened'].get('mouse_click'):
+                    element['frame_class'].current_frame = 4
+
+        elif element['frame_class'].current_frame == 4:
+            if not element['listened'].get('mouse_attention'):
+                element['frame_class'].current_frame = 3
+            if element['listened'].get('mouse_click'):
+                element['frame_class'].current_frame = 5
+
+        elif element['frame_class'].current_frame == 5:
+            if not element['listened'].get('mouse_click'):
+                element.state = False
+                element['frame_class'].current_frame = 0
+            if not element['listened'].get('mouse_attention'):
+                element['frame_class'].current_frame = 3
+
+
 class Theme:
     def __init__(self, array):
+        array.update({'suns': []})
         self.array = array
 
     def __getitem__(self, item):
@@ -202,6 +347,16 @@ class Theme:
     def __setitem__(self, key, value):
         self.array.update({key: value})
 
+    def activate(self):
+        for el in self['suns']:
+            for i in range(len(el['theme'][el.__class__.__name__])):
+                el['frame_array'][i].update(el['theme'][el.__class__.__name__][i])
+            if el['update']:
+                el['frame_class'].set_pos(el['pos'])
+                el['frame_class'].update_frames()
+                el['surf'] = (~el)['frame'].copy()
+    def update(self, array:dict):
+        self.array.update(array)
 
 main_theme = Theme({
     'Text': [{'name': 'serif', 'size': 24, 'bold': False, 'italic': False,
@@ -227,7 +382,20 @@ main_theme = Theme({
          'check_r': 3, 'check_color': [200, 255, 189]},
         {'border_color': [50, 255, 0], 'border_r': 4, 'back_color': [100, 140, 100],
          'check_r': 3, 'check_color': [230, 225, 189]}
-    ]
+    ],
+    'Element': [],
+    'ChoiceBox': [{'name': 'serif', 'size': 24, 'bold': False, 'italic': False, 'antialias': True,
+                   'color': [255, 255, 255], 'border_color': [0, 40, 110], 'border_r': 2, 'back_color': [0, 80, 94]},
+                  {'name': 'serif', 'size': 24, 'bold': False, 'italic': False, 'antialias': True,
+                   'color': [255, 255, 255], 'border_color': [0, 40, 130], 'border_r': 2, 'back_color': [0, 109, 104]},
+                  {'name': 'serif', 'size': 24, 'bold': False, 'italic': False, 'antialias': True,
+                   'color': [255, 255, 255], 'border_color': [0, 40, 110], 'border_r': 5, 'back_color': [0, 109, 104]}],
+    'Input': [{'name': 'serif', 'size': 24, 'bold': False, 'italic': False, 'antialias': True,
+               'color': [255, 255, 255], 'border_color': [190, 40, 110], 'border_r': 2, 'back_color': [84, 80, 94]},
+              {'name': 'serif', 'size': 24, 'bold': False, 'italic': False, 'antialias': True,
+               'color': [255, 255, 255], 'border_color': [210, 40, 130], 'border_r': 2, 'back_color': [54, 109, 104]},
+              {'name': 'serif', 'size': 24, 'bold': False, 'italic': False, 'antialias': True,
+               'color': [255, 255, 255], 'border_color': [190, 40, 110], 'border_r': 5, 'back_color': [54, 109, 104]}]
 })
 
 
@@ -240,6 +408,10 @@ class Element:
         self['father']['suns'].append(self)
         self['suns'] = []
         self['frame_class'] = Frames(self['frame_array'])
+        self['theme'] = main_theme
+        self['theme']['suns'].append(self)
+        for i in range(min(len(self['frame_array']), len(self['theme'][self.__class__.__name__]))):
+            self['frame_array'][i].update(self['theme'][self.__class__.__name__][i])
         if array.get('update'):
             self['frame_class'].set_pos(self['pos'])
             self['frame_class'].update_frames()
@@ -328,222 +500,34 @@ class Display(Element):
 
 class Text(Element):
     def __init__(self, array, text):
-
-        def fun_text(frame_dict):
-            if frame_dict.get('text'):
-                s = pygame.font.SysFont(frame_dict.get('name'), frame_dict.get('size'),
-                                        frame_dict.get('bold'), frame_dict.get('italic')).render(
-                    frame_dict.get('text'), frame_dict.get('antialias'), frame_dict.get('color'))
-                frame_dict['pos'].inner = V([i / 2 for i in s.get_size()])
-                frame_dict['pos'].update()
-                return s
-            else:
-                return fun_rect([10, 60, 160])(frame_dict)
-
-        def fun_text_attention(element):
-            if element['listened'].get('mouse_attention'):
-                element['frame_array'][0]['size'] += 1
-            else:
-                element['frame_array'][0]['size'] = 24
-            element['frame_class'].update_frames()
-
         array.update({
             'update': True, 'is_listen': True, 'is_draw': True, 'listened': {}, 'functions': {},
-            'frame_array': [{
-                'fun': fun_text, 'text': text, 'name': 'serif', 'size': 24, 'bold': False, 'italic': False,
-                'antialias': True, 'color': [255, 255, 255]
-            }],
+            'frame_array': [{'fun': fun_text, 'text': text}],
         })
         super().__init__(array)
 
 
 class Button(Element):
+
     def __init__(self, array, text):
-
-        def fun_button(frame_dict):
-            s = pygame.font.SysFont(frame_dict.get('name'), frame_dict.get('size'),
-                                    frame_dict.get('bold'), frame_dict.get('italic')).render(
-                frame_dict.get('text'), frame_dict.get('antialias'), frame_dict.get('color'))
-
-            pos = frame_dict['pos'].copy()
-            pos = Pos(pos.inner, pos.inner)
-            pos.update()
-
-            border = pygame.Surface(pos.size.lis())
-            border.fill(frame_dict['border_color'])
-
-            pos.inner -= V(frame_dict['border_r'], frame_dict['border_r'])
-            pos.update()
-
-            back = pygame.Surface(pos.size.lis())
-            back.fill(frame_dict['back_color'])
-
-            text_pos = Pos(pos.inner, V([i / 2 for i in s.get_size()]))
-
-            back.blit(s, text_pos.position.lis())
-            border.blit(back, pos.position.lis())
-            return border
-
-        def listen_button(element):
-            if element['frame_class'].current_frame == 0:
-                if element['listened'].get('mouse_attention'):
-                    if not element['listened'].get('mouse_click'):
-                        element['frame_class'].current_frame = 1
-
-            elif element['frame_class'].current_frame == 1:
-                if not element['listened'].get('mouse_attention'):
-                    element['frame_class'].current_frame = 0
-                if element['listened'].get('mouse_click'):
-                    element['frame_class'].current_frame = 2
-
-            elif element['frame_class'].current_frame == 2:
-                if not element['listened'].get('mouse_click'):
-                    element['listened'].update({'button_click': True})
-                    element['frame_class'].current_frame = 0
-                if not element['listened'].get('mouse_attention'):
-                    element['frame_class'].current_frame = 0
-
         array.update({
-            'update': False, 'is_listen': True, 'is_draw': True, 'listened': {},
+            'update': True, 'is_listen': True, 'is_draw': True, 'listened': {},
             'functions': {'1': listen_button},
             'frame_array': [
-                {'fun': fun_button, 'pos': array['pos'].copy(), 'text': text, 'name': 'serif', 'size': 24,
-                 'bold': False, 'italic': False, 'antialias': True, 'color': [255, 255, 255],
-                 'border_color': [0, 255, 0], 'border_r': 2, 'back_color': [14, 129, 94]},
-                {'fun': fun_button, 'pos': array['pos'].copy(), 'text': text, 'name': 'serif', 'size': 24,
-                 'bold': False, 'italic': False, 'antialias': True, 'color': [255, 255, 255],
-                 'border_color': [10, 255, 0], 'border_r': 2, 'back_color': [30, 150, 110]},
-                {'fun': fun_button, 'pos': array['pos'].copy().scale(0.9), 'text': text, 'name': 'serif', 'size': 21,
-                 'bold': False, 'italic': False, 'antialias': True, 'color': [255, 255, 255],
-                 'border_color': [50, 255, 0], 'border_r': 2, 'back_color': [100, 140, 100]}
+                {'fun': fun_button, 'pos': array['pos'].copy(), 'text': text},
+                {'fun': fun_button, 'pos': array['pos'].copy(), 'text': text},
+                {'fun': fun_button, 'pos': array['pos'].copy().scale(0.9), 'text': text}
             ],
         })
-
         super().__init__(array)
-        self['frame_class'].update_frames()
-        self['frame_class'].current_frame = 0
-        self['surf'] = (~self)['frame'].copy()
 
     def set_click_action(self, fun):
         self['functions'].update({'click_action': fun})
 
 
-class Group:
-    def __init__(self, array: dict):
-        self.array = array
-        self.state = False
-        self.deactivate()
-
-    def add_elements(self, array: dict):
-        self.array.update(array)
-        if self.state:
-            self.activate()
-        else:
-            self.deactivate()
-
-    def activate(self):
-        self.state = True
-        for key in self.array:
-            self[key]['is_draw'] = True
-            self[key]['is_listen'] = True
-
-    def deactivate(self):
-        self.state = False
-        for key in self.array:
-            self[key]['is_draw'] = False
-            self[key]['is_listen'] = False
-
-    def __getitem__(self, item):
-        return self.array[item]
-
-    def __setitem__(self, key, value):
-        self.array.update({key: value})
-
-
 class CheckBox(Element):
     def __init__(self, array, state=False):
         self.state = state
-
-        def fun_off_box(frame_dict):
-            pos = frame_dict['pos'].copy()
-            pos = Pos(pos.inner, pos.inner)
-            pos.update()
-
-            border = pygame.Surface(pos.size.lis())
-            border.fill(frame_dict['border_color'])
-
-            pos.inner -= V(frame_dict['border_r'], frame_dict['border_r'])
-            pos.update()
-
-            back = pygame.Surface(pos.size.lis())
-            back.fill(frame_dict['back_color'])
-
-            border.blit(back, pos.position.lis())
-            return border
-
-        def fun_on_box(frame_dict):
-            pos = frame_dict['pos'].copy()
-            pos = Pos(pos.inner, pos.inner)
-            pos.update()
-
-            border = pygame.Surface(pos.size.lis())
-            border.fill(frame_dict['border_color'])
-
-            pos.inner -= V(frame_dict['border_r'], frame_dict['border_r'])
-            pos.update()
-
-            pos_check = Pos(pos.inner, pos.inner)
-            pos_check.inner -= V(frame_dict['check_r'], frame_dict['check_r'])
-            pos_check.update()
-
-            back = pygame.Surface(pos.size.lis())
-            back.fill(frame_dict['back_color'])
-
-            check = pygame.Surface(pos_check.size.lis())
-            check.fill(frame_dict['check_color'])
-
-            back.blit(check, pos_check.position.lis())
-
-            border.blit(back, pos.position.lis())
-            return border
-
-        def listen_box(element):
-            if not self.state:
-                if element['frame_class'].current_frame == 0:
-                    if element['listened'].get('mouse_attention'):
-                        if not element['listened'].get('mouse_click'):
-                            element['frame_class'].current_frame = 1
-
-                elif element['frame_class'].current_frame == 1:
-                    if not element['listened'].get('mouse_attention'):
-                        element['frame_class'].current_frame = 0
-                    if element['listened'].get('mouse_click'):
-                        element['frame_class'].current_frame = 2
-
-                elif element['frame_class'].current_frame == 2:
-                    if not element['listened'].get('mouse_click'):
-                        self.state = True
-                        element['frame_class'].current_frame = 3
-                    if not element['listened'].get('mouse_attention'):
-                        element['frame_class'].current_frame = 0
-            else:
-                if element['frame_class'].current_frame == 3:
-                    if element['listened'].get('mouse_attention'):
-                        if not element['listened'].get('mouse_click'):
-                            element['frame_class'].current_frame = 4
-
-                elif element['frame_class'].current_frame == 4:
-                    if not element['listened'].get('mouse_attention'):
-                        element['frame_class'].current_frame = 3
-                    if element['listened'].get('mouse_click'):
-                        element['frame_class'].current_frame = 5
-
-                elif element['frame_class'].current_frame == 5:
-                    if not element['listened'].get('mouse_click'):
-                        self.state = False
-                        element['frame_class'].current_frame = 0
-                    if not element['listened'].get('mouse_attention'):
-                        element['frame_class'].current_frame = 3
 
         array.update({
             'update': True, 'is_listen': True, 'is_draw': True, 'listened': {},
@@ -564,11 +548,23 @@ class CheckBox(Element):
         if self.state:
             self['frame_class'].current_frame = 3
 
+    def get_information(self):
+        return self.state
+
 
 class Input(Element):
-    def __init__(self, array, text=""):
+    def __init__(self, array, text="", data=int):
+        self.data = data
         self.text = text
         self.state = False
+        if data == int:
+            self.re = r'[0-9]'
+        elif data == float:
+            self.re = r'[0-9.]'
+        elif data == complex:
+            self.re = r'[0-9.j]'
+        else:
+            self.re = r'[\w ,.]'
 
         def fun_input(frame_dict):
             s = pygame.font.SysFont(frame_dict.get('name'), frame_dict.get('size'),
@@ -615,15 +611,9 @@ class Input(Element):
             'update': True, 'is_listen': True, 'is_draw': True, 'listened': {},
             'functions': {'1': listen_input},
             'frame_array': [
-                {'fun': fun_input, 'pos': array['pos'].copy(), 'name': 'serif', 'size': 24,
-                 'bold': False, 'italic': False, 'antialias': True, 'color': [255, 255, 255],
-                 'border_color': [190, 40, 110], 'border_r': 2, 'back_color': [84, 80, 94]},
-                {'fun': fun_input, 'pos': array['pos'].copy(), 'name': 'serif', 'size': 24,
-                 'bold': False, 'italic': False, 'antialias': True, 'color': [255, 255, 255],
-                 'border_color': [210, 40, 130], 'border_r': 2, 'back_color': [54, 109, 104]},
-                {'fun': fun_input, 'pos': array['pos'].copy(), 'name': 'serif', 'size': 24,
-                 'bold': False, 'italic': False, 'antialias': True, 'color': [255, 255, 255],
-                 'border_color': [190, 40, 110], 'border_r': 5, 'back_color': [54, 109, 104]}
+                {'fun': fun_input, 'pos': array['pos'].copy()},
+                {'fun': fun_input, 'pos': array['pos'].copy()},
+                {'fun': fun_input, 'pos': array['pos'].copy()}
             ]
         })
 
@@ -640,9 +630,18 @@ class Input(Element):
                 self.text = self.text[:-1]
                 self['frame_class'].update_frames()
 
-            if re.match(r'[\w ,.]', symbol):
+            if re.match(self.re, symbol):
                 self.text += symbol
                 self['frame_class'].update_frames()
+
+    def get_information(self):
+        if self.data == int or self.data == float or self.data == complex:
+            if len(self.text) > 0:
+                return self.data(self.text)
+            else:
+                return self.data(0)
+        elif self.data == str:
+            return self.text
 
 
 class ChoiceBox(Element):
@@ -706,15 +705,9 @@ class ChoiceBox(Element):
             'update': True, 'is_listen': True, 'is_draw': True, 'listened': {},
             'functions': {'1': listen_choice},
             'frame_array': [
-                {'fun': fun_choice, 'pos': array['pos'].copy(), 'name': 'serif', 'size': 24,
-                 'bold': False, 'italic': False, 'antialias': True, 'color': [255, 255, 255],
-                 'border_color': [0, 40, 110], 'border_r': 2, 'back_color': [0, 80, 94]},
-                {'fun': fun_choice, 'pos': array['pos'].copy(), 'name': 'serif', 'size': 24,
-                 'bold': False, 'italic': False, 'antialias': True, 'color': [255, 255, 255],
-                 'border_color': [0, 40, 130], 'border_r': 2, 'back_color': [0, 109, 104]},
-                {'fun': fun_choice, 'pos': array['pos'].copy(), 'name': 'serif', 'size': 24,
-                 'bold': False, 'italic': False, 'antialias': True, 'color': [255, 255, 255],
-                 'border_color': [0, 40, 110], 'border_r': 5, 'back_color': [0, 109, 104]}
+                {'fun': fun_choice, 'pos': array['pos'].copy()},
+                {'fun': fun_choice, 'pos': array['pos'].copy()},
+                {'fun': fun_choice, 'pos': array['pos'].copy()}
             ]
         })
 
@@ -734,3 +727,38 @@ class ChoiceBox(Element):
                     if self.current > 0:
                         self.current -= 1
                         self['frame_class'].update_frames()
+
+    def get_information(self):
+        return list(self.choice_dict.values())[self.current]
+
+
+class Group:
+    def __init__(self, array: dict):
+        self.array = array
+        self.state = False
+        self.deactivate()
+
+    def add_elements(self, array: dict):
+        self.array.update(array)
+        if self.state:
+            self.activate()
+        else:
+            self.deactivate()
+
+    def activate(self):
+        self.state = True
+        for key in self.array:
+            self[key]['is_draw'] = True
+            self[key]['is_listen'] = True
+
+    def deactivate(self):
+        self.state = False
+        for key in self.array:
+            self[key]['is_draw'] = False
+            self[key]['is_listen'] = False
+
+    def __getitem__(self, item):
+        return self.array[item]
+
+    def __setitem__(self, key, value):
+        self.array.update({key: value})

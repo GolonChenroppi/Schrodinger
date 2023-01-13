@@ -14,8 +14,10 @@ canvas = Group({})
 params = Group({})
 game = Group({})
 screen = Group({})
+moving = Group({})
 
-main_array = {'menu': menu, 'canvas': canvas, 'params': params, 'game': game, 'screen': screen, 'center': V(400, 300),
+main_array = {'menu': menu, 'canvas': canvas, 'params': params, 'game': game, 'screen': screen, 'moving': moving,
+              'center': V(400, 300),
               'bg_color': [0, 0, 0], 'button_inner': V(60, 19), 'text_inner': V(60, 30), 'menu_color': [34, 65, 76],
               'menu_border_color': [130, 130, 130], 'menu_border_r': V(5, 5), 'go': False, 'cube': [8, 8, 8]}
 # name_points: {points: list[{'mod': float, 'point': list[float], 'vector': list[float]}], cube: list[float],
@@ -79,6 +81,7 @@ canvas_exit_2.set_click_action(change_group(params, menu))
 text_hydrogen = Text({'father': params_plane, 'pos': Pos(V(180, 80), V(180, 19))}, 'Выберите волновую функцию -')
 choice_hydrogen = ChoiceBox({'father': params_plane, 'pos': Pos(V(420, 80), V(60, 19))}, hydrogen_functions)
 
+
 text_density = Text({'father': params_plane, 'pos': Pos(V(130, 130), V(180, 19))}, 'Отобразить плотность')
 text_pulse = Text({'father': params_plane, 'pos': Pos(V(130, 180), V(180, 19))}, 'Отобразить импульс')
 
@@ -97,13 +100,18 @@ Text({'father': params_plane, 'pos': Pos(V(500, 360), V(180, 19))},
      'Если хотите найти максимальные плотность и импульс')
 Text({'father': params_plane, 'pos': Pos(V(500, 380), V(180, 19))}, 'укажите большое число ~10')
 
-input_density_zn = Input({'father': params_plane, 'pos': Pos(V(550, 260), V(60, 19))})
-input_pulse_zn = Input({'father': params_plane, 'pos': Pos(V(550, 310), V(60, 19))})
+input_density_zn = Input({'father': params_plane, 'pos': Pos(V(550, 260), V(60, 19))}, data=float)
+input_pulse_zn = Input({'father': params_plane, 'pos': Pos(V(550, 310), V(60, 19))}, data=float)
 
 button_rego = Button({'father': params_plane, 'pos': Pos(V(260, 500), V(240, 25))},
                      'Применить параметры')
 button_go = Button({'father': params_plane, 'pos': Pos(V(650, 500), V(100, 25))}, 'К Визувлизации')
-button_go.set_click_action(change_group(params, screen))
+button_go.set_click_action(sum_function(
+    copy_information(
+        ['finding_points'], [box_density], points_density),
+    copy_information(
+        ['finding_vectors'], [box_pulse], vectors_pulse),
+    change_group(params, screen)))
 
 button_rego.set_click_action(sum_function(
     copy_information(
@@ -120,7 +128,7 @@ button_rego.set_click_action(sum_function(
 
 params.add_elements({'plane': params_plane})
 
-camera_plane = Element({'father': window, 'pos': Pos(main_array['center'], V(400, 300)), 'update': True,
+camera_plane = Element({'father': window, 'pos': Pos(main_array['center'], main_array['center']), 'update': True,
                         'frame_array': [{'fun': fun_rect_border(main_array['menu_border_color'],
                                                                 main_array['menu_border_r'],
                                                                 main_array['menu_color'])}],
@@ -128,15 +136,35 @@ camera_plane = Element({'father': window, 'pos': Pos(main_array['center'], V(400
                         'functions': {}})
 button_back = Button({'father': camera_plane, 'pos': Pos(V(70, 30), V(60, 19))}, 'Назад')
 button_back.set_click_action(sum_function(
-    change_group(screen, params),
     copy_information(['finding_points'], [False], points_density),
-    copy_information(['finding_vectors'], [False], vectors_pulse)
+    copy_information(['finding_vectors'], [False], vectors_pulse),
+    change_group(screen, params)
 ))
+button_go_moving = Button({'father': camera_plane, 'pos': Pos(V(210, 30), V(70, 19))}, 'Управление')
+button_go_moving.set_click_action(change_group(screen, moving))
+
 screen.add_elements({'plane': camera_plane})
+
+moving_plane = Element({'father': window, 'pos': Pos(main_array['center'], V(200, 150)), 'update': True,
+                        'frame_array': [{'fun': fun_rect_border(main_array['menu_border_color'],
+                                                                main_array['menu_border_r'], main_array['menu_color'])}],
+                        'is_listen': True, 'is_draw': True, 'listened': {},
+                        'functions': {}})
+button_go_screen = Button({'father': moving_plane, 'pos': Pos(V(200, 30), V(60, 19))}, 'Назад')
+button_go_screen.set_click_action(change_group(moving, screen))
+Text({'father': moving_plane, 'pos': Pos(V(200, 80), V(60, 19))}, 'wasd - плоскость xy')
+Text({'father': moving_plane, 'pos': Pos(V(200, 130), V(60, 19))}, 'space, shift - ось z')
+Text({'father': moving_plane, 'pos': Pos(V(200, 180), V(60, 19))}, 'ctrl - ускорение')
+Text({'father': moving_plane, 'pos': Pos(V(200, 230), V(60, 19))}, 'стрелки - вращение камеры')
+
+
+
+moving.add_elements({'plane': moving_plane})
+
 
 camera = Camera((~camera_plane)['frame'], [0, 0, 0])
 
-params.activate()
+menu.activate()
 clock = pygame.time.Clock()
 
 while True:

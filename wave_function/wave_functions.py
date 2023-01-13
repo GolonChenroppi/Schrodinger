@@ -89,14 +89,9 @@ def wave_space(density):
     return lambda rd: sqrt(density)
 
 
-hydrogen_functions.update({'const': wave_space})
-
-
 def wave_flow(density, k):
     return lambda rd: cmath.rect(sqrt(density), sp(rd, k))
 
-
-hydrogen_functions.update({'flow': wave_flow})
 
 key_del = []
 for key in hydrogen_functions:

@@ -17,7 +17,7 @@ screen = Group({})
 moving = Group({})
 
 main_array = {'menu': menu, 'canvas': canvas, 'params': params, 'game': game, 'screen': screen, 'moving': moving,
-              'center': V(400, 300),
+              'center': V(0, 0),
               'bg_color': [0, 0, 0], 'button_inner': V(60, 19), 'text_inner': V(60, 30), 'menu_color': [34, 65, 76],
               'menu_border_color': [130, 130, 130], 'menu_border_r': V(5, 5), 'go': False, 'cube': [8, 8, 8]}
 # name_points: {points: list[{'mod': float, 'point': list[float], 'vector': list[float]}], cube: list[float],
@@ -26,14 +26,16 @@ main_array = {'menu': menu, 'canvas': canvas, 'params': params, 'game': game, 's
 
 points_density = {'points': [], 'cube': main_array['cube'], 'scalar_operator': density, 'wave_function': None,
                   'finding_points': False, 'zn': None, 'max_col': None, 'min_delta': None}
-th1 = Thread(target=find_points, args=(points_density,)).start()
+th1 = Thread(target=find_points, args=(points_density,), daemon=True).start()
 
 vectors_pulse = {'vectors': [], 'cube': main_array['cube'], 'vector_operator': operator_imag_vector(gradient),
                  'wave_function': None, 'finding_vectors': False, 'zn': None, 'max_col': None, 'min_delta': None}
-th2 = Thread(target=find_vectors, args=(vectors_pulse,)).start()
+th2 = Thread(target=find_vectors, args=(vectors_pulse,), daemon=True).start()
 
 window = Display({'pos': Pos(main_array['center'], main_array['center']),
                   'bg_color': main_array['bg_color']})
+
+main_array.update({'center': V(list(pygame.display.get_window_size()))*0.5})
 
 menu_plane = Element({'father': window, 'pos': Pos(main_array['center'], V(100, 200)), 'update': True,
                       'frame_array': [{'fun': fun_rect_border(main_array['menu_border_color'],
